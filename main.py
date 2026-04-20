@@ -27,7 +27,3 @@ def get_movie_id(movie_id: int):
         return movie_list[movie_id]
 
 # добавить фильм в список
-@app.post("/movies")
-def add_movie(item: Movie):
-    movie_list.append(item.name)
-    return {"message": "Фильм успешно добавлен!", "movies": movie_list}
