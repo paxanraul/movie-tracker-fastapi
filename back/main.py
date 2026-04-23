@@ -31,3 +31,12 @@ def get_movie_id(movie_id: int):
 def add_movie(item: Movie):
     movie_list.append(item.name)
     return {"message": "Фильм успешно добавлен!", "movies": movie_list}
+
+# удалить фильм по индексу
+@app.delete("/movies/{movie_id}")
+def delete_movie(movie_id: int):
+    if movie_id >= len(movie_list):
+        return {"error": "Movie not found"}
+    else:
+        return movie_list.pop(movie_id)
+
