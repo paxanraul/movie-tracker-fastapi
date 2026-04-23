@@ -35,8 +35,9 @@ def add_movie(item: Movie):
 # удалить фильм по индексу
 @app.delete("/movies/{movie_id}")
 def delete_movie(movie_id: int):
-    if movie_id >= len(movie_list):
+    if movie_id >= len(movie_list) or movie_id < 0:
         return {"error": "Movie not found"}
     else:
-        return movie_list.pop(movie_id)
+        deleted = movie_list.pop(movie_id)
+        return {"message": "Movie deleted!", "deleted_movie": deleted, "movies": movie_list}
 
