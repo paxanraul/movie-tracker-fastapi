@@ -1,4 +1,4 @@
 SQLalchemy
 uvicorn
-aiosqlite
 fastapi
+asyncpg
