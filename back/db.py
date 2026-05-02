@@ -1,6 +1,5 @@
-from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 DATABASE_URL = "postgresql+asyncpg://paxan_raul:123456@localhost:5432/movie_db"
 
@@ -12,9 +11,8 @@ SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 class Base(DeclarativeBase):
     pass
 
-class Movie(Base):
-    __tablename__ = "movies"
 
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    year = Column(Integer)
+# Создает таблицу
+async def create_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
