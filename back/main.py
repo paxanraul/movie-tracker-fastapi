@@ -56,8 +56,12 @@ async def add_movie(item: MovieCreate):
 @app.delete("/movies/{movie_id}")
 async def delete_movie(movie_id: int):
     async with SessionLocal() as session:
-        selected_movie = await session.execute(delete(Movie).where(Movie.id == movie_id))
+        result = await session.execute(
+            select(Movie).where(Movie.id == movie_id)
+        )
+        movie = result.scalars().one_or_none()
+        if movie is None:
+            return {"message": "Movie not found!"}
+        await session.delete(movie)
         await session.commit()
         return {"message": "Movie deleted!"}
-
-
