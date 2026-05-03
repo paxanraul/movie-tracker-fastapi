@@ -17,8 +17,12 @@ app = FastAPI(lifespan=lifespan)
 # Classes
 
 class MovieCreate(BaseModel):
-    title: str
-    year: int
+    title: str | None
+    year: int | None
+
+class MovieUpdate(BaseModel):
+    title: str | None
+    year: int | None
 
 
 # endpoints
@@ -65,3 +69,21 @@ async def delete_movie(movie_id: int):
         await session.delete(movie)
         await session.commit()
         return {"message": "Movie deleted!"}
+
+# обновить данные фильма
+
+@app.patch("/movies/{movie_id}")
+async def update_movie(movie_id: int, item: MovieUpdate):
+    async with SessionLocal() as session:
+        result = await session.execute(
+            select(Movie).where(Movie.id == movie_id)
+        )
+        movie = result.scalars().one_or_none()
+        if movie is None:
+            return {"message": "Movie not found!"}
+        if item.title is not None:
+            movie.title = item.title
+        if item.year is not None:
+            movie.year = item.year
+        await session.commit()
+        return {"message": "Movie updated!", "movie": movie}
