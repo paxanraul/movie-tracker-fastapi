@@ -1,11 +1,17 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from sqlalchemy import select, delete
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from db import create_db, SessionLocal
 from models import Movie
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+FRONT_DIR = BASE_DIR / "front"
 
 
 @asynccontextmanager
@@ -14,6 +20,14 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+app.mount("/static", StaticFiles(directory=FRONT_DIR), name="static")
+
+
+@app.get("/")
+async def frontend():
+    return FileResponse(FRONT_DIR / "index.html")
+
+
 # Classes
 
 class MovieCreate(BaseModel):
@@ -46,7 +60,7 @@ async def get_movie_id(movie_id: int):
         return {"movie": movie}
 
 # добавить фильм в список
-@app.post("/movies")
+@app.post("/movies/{movie_id}")
 async def add_movie(item: MovieCreate):
     async with SessionLocal() as session:
         new_movie = Movie(title=item.title, year=item.year)
