@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Movie Tracker</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+        color: #222;
+      }
+
+      main {
+        width: min(760px, calc(100% - 32px));
+        margin: 40px auto;
+      }
+
+      h1 {
+        margin: 0 0 24px;
+      }
+
+      section {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+
+      form {
+        display: grid;
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        font-weight: 700;
+      }
+
+      input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #bbb;
+        border-radius: 6px;
+        font: inherit;
+      }
+
+      button {
+        padding: 10px 14px;
+        border: 0;
+        border-radius: 6px;
+        background: #222;
+        color: #fff;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        background: #666;
+      }
+
+      button.danger {
+        background: #b42318;
+      }
+
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .movie {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+        border-top: 1px solid #eee;
+        padding: 12px 0;
+      }
+
+      .movie:first-child {
+        border-top: 0;
+      }
+
+      .movie-title {
+        font-weight: 700;
+      }
+
+      .movie-meta {
+        color: #666;
+        font-size: 14px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .message {
+        min-height: 22px;
+        color: #555;
+      }
+
+      @media (max-width: 560px) {
+        .movie {
+          grid-template-columns: 1fr;
+        }
+
+        .actions {
+          flex-wrap: wrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Movie Tracker</h1>
+
+      <section>
+        <h2>Добавить фильм</h2>
+        <form id="addForm">
+          <label>
+            Название
+            <input id="titleInput" name="title" required placeholder="Batman" />
+          </label>
+          <label>
+            Год
+            <input id="yearInput" name="year" type="number" required placeholder="2008" />
+          </label>
+          <button type="submit">Добавить</button>
+        </form>
+      </section>
+
+      <section>
+        <div class="toolbar">
+          <h2>Фильмы</h2>
+          <button class="secondary" id="refreshButton" type="button">Обновить</button>
+        </div>
+        <div id="movies"></div>
+        <p class="message" id="message"></p>
+      </section>
+    </main>
+
+    <script>
+      const addForm = document.querySelector("#addForm");
+      const titleInput = document.querySelector("#titleInput");
+      const yearInput = document.querySelector("#yearInput");
+      const refreshButton = document.querySelector("#refreshButton");
+      const moviesContainer = document.querySelector("#movies");
+      const message = document.querySelector("#message");
+
+      async function requestJson(url, options = {}) {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+          throw new Error(`Ошибка запроса: ${response.status}`);
+        }
+        return response.json();
+      }
+
+      async function loadMovies() {
+        message.textContent = "Загружаю список...";
+        const data = await requestJson("/movies");
+        renderMovies(data.movies || []);
+        message.textContent = "";
+      }
+
+      function renderMovies(movies) {
+        moviesContainer.innerHTML = "";
+
+        if (movies.length === 0) {
+          moviesContainer.textContent = "Пока фильмов нет.";
+          return;
+        }
+
+        for (const movie of movies) {
+          const movieElement = document.createElement("div");
+          movieElement.className = "movie";
+
+          const infoElement = document.createElement("div");
+          infoElement.innerHTML = `
+            <div class="movie-title">${movie.title}</div>
+            <div class="movie-meta">id: ${movie.id}, год: ${movie.year}</div>
+          `;
+
+          const actionsElement = document.createElement("div");
+          actionsElement.className = "actions";
+
+          const editButton = document.createElement("button");
+          editButton.className = "secondary";
+          editButton.type = "button";
+          editButton.textContent = "Изменить";
+          editButton.addEventListener("click", () => updateMovie(movie));
+
+          const deleteButton = document.createElement("button");
+          deleteButton.className = "danger";
+          deleteButton.type = "button";
+          deleteButton.textContent = "Удалить";
+          deleteButton.addEventListener("click", () => deleteMovie(movie.id));
+
+          actionsElement.append(editButton, deleteButton);
+          movieElement.append(infoElement, actionsElement);
+          moviesContainer.append(movieElement);
+        }
+      }
+
+      async function addMovie(event) {
+        event.preventDefault();
+
+        const movie = {
+          title: titleInput.value,
+          year: Number(yearInput.value),
+        };
+
+        await requestJson("/movies/0", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(movie),
+        });
+
+        addForm.reset();
+        await loadMovies();
+      }
+
+      async function updateMovie(movie) {
+        const title = prompt("Новое название:", movie.title);
+        if (title === null) return;
+
+        const year = prompt("Новый год:", movie.year);
+        if (year === null) return;
+
+        await requestJson(`/movies/${movie.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, year: Number(year) }),
+        });
+
+        await loadMovies();
+      }
+
+      async function deleteMovie(id) {
+        await requestJson(`/movies/${id}`, { method: "DELETE" });
+        await loadMovies();
+      }
+
+      addForm.addEventListener("submit", addMovie);
+      refreshButton.addEventListener("click", loadMovies);
+
+      loadMovies().catch((error) => {
+        message.textContent = error.message;
+      });
+    </script>
+  </body>
+</html>
