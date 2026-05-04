@@ -2,3 +2,5 @@ SQLalchemy
 uvicorn
 fastapi
 asyncpg
+greenlet
+pydantic
