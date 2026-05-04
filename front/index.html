@@ -110,6 +110,35 @@
         color: #555;
       }
 
+      dialog {
+        width: min(420px, calc(100% - 32px));
+        border: 0;
+        border-radius: 8px;
+        padding: 20px;
+      }
+
+      dialog::backdrop {
+        background: rgb(0 0 0 / 45%);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .modal-header h2 {
+        margin: 0;
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
       @media (max-width: 560px) {
         .movie {
           grid-template-columns: 1fr;
@@ -140,6 +169,27 @@
         </form>
       </section>
 
+      <dialog id="editDialog">
+        <div class="modal-header">
+          <h2>Изменить фильм</h2>
+          <button class="secondary" id="closeEditButton" type="button">Закрыть</button>
+        </div>
+        <form id="editForm">
+          <label>
+            Новое название
+            <input id="editTitleInput" name="title" required placeholder="Batman" />
+          </label>
+          <label>
+            Год
+            <input id="editYearInput" name="year" type="number" required placeholder="2008" />
+          </label>
+          <div class="modal-actions">
+            <button class="secondary" id="cancelEditButton" type="button">Отмена</button>
+            <button type="submit">Сохранить</button>
+          </div>
+        </form>
+      </dialog>
+
       <section>
         <div class="toolbar">
           <h2>Фильмы</h2>
@@ -152,11 +202,18 @@
 
     <script>
       const addForm = document.querySelector("#addForm");
+      const editForm = document.querySelector("#editForm");
       const titleInput = document.querySelector("#titleInput");
       const yearInput = document.querySelector("#yearInput");
+      const editTitleInput = document.querySelector("#editTitleInput");
+      const editYearInput = document.querySelector("#editYearInput");
+      const editDialog = document.querySelector("#editDialog");
+      const closeEditButton = document.querySelector("#closeEditButton");
+      const cancelEditButton = document.querySelector("#cancelEditButton");
       const refreshButton = document.querySelector("#refreshButton");
       const moviesContainer = document.querySelector("#movies");
       const message = document.querySelector("#message");
+      let selectedMovieId = null;
 
       async function requestJson(url, options = {}) {
         const response = await fetch(url, options);
@@ -198,7 +255,7 @@
           editButton.className = "secondary";
           editButton.type = "button";
           editButton.textContent = "Изменить";
-          editButton.addEventListener("click", () => updateMovie(movie));
+          editButton.addEventListener("click", () => fillEditForm(movie));
 
           const deleteButton = document.createElement("button");
           deleteButton.className = "danger";
@@ -230,20 +287,45 @@
         await loadMovies();
       }
 
-      async function updateMovie(movie) {
-        const title = prompt("Новое название:", movie.title);
-        if (title === null) return;
+      function fillEditForm(movie) {
+        selectedMovieId = movie.id;
+        editTitleInput.value = movie.title;
+        editYearInput.value = movie.year;
+        message.textContent = `Редактируем: ${movie.title}`;
+        editDialog.showModal();
+      }
 
-        const year = prompt("Новый год:", movie.year);
-        if (year === null) return;
+      async function updateMovie(event) {
+        event.preventDefault();
 
-        await requestJson(`/movies/${movie.id}`, {
+        if (selectedMovieId === null) {
+          message.textContent = "Сначала выбери фильм кнопкой Изменить.";
+          return;
+        }
+
+        const movie = {
+          title: editTitleInput.value,
+          year: Number(editYearInput.value),
+        };
+
+        await requestJson(`/movies/${selectedMovieId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, year: Number(year) }),
+          body: JSON.stringify(movie),
         });
 
+        selectedMovieId = null;
+        editForm.reset();
+        editDialog.close();
         await loadMovies();
+        message.textContent = "Фильм изменен.";
+      }
+
+      function closeEditDialog() {
+        selectedMovieId = null;
+        editForm.reset();
+        editDialog.close();
+        message.textContent = "";
       }
 
       async function deleteMovie(id) {
@@ -252,6 +334,9 @@
       }
 
       addForm.addEventListener("submit", addMovie);
+      editForm.addEventListener("submit", updateMovie);
+      closeEditButton.addEventListener("click", closeEditDialog);
+      cancelEditButton.addEventListener("click", closeEditDialog);
       refreshButton.addEventListener("click", loadMovies);
 
       loadMovies().catch((error) => {
