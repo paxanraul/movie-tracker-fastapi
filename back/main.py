@@ -1,14 +1,14 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
 
 from db import create_db, SessionLocal
 from models import Movie
+from schemas import MovieCreate, MovieUpdate
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONT_DIR = BASE_DIR / "front"
@@ -26,17 +26,6 @@ app.mount("/static", StaticFiles(directory=FRONT_DIR), name="static")
 @app.get("/")
 async def frontend():
     return FileResponse(FRONT_DIR / "index.html")
-
-
-# Classes
-
-class MovieCreate(BaseModel):
-    title: str | None
-    year: int | None
-
-class MovieUpdate(BaseModel):
-    title: str | None
-    year: int | None
 
 
 # endpoints
