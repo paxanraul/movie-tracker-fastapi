@@ -1,14 +1,13 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from sqlalchemy import select
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from db import create_db, SessionLocal
-from models import Movie
-from schemas import MovieCreate, MovieUpdate
+from db import create_db
+
+from router import router as movies_router
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONT_DIR = BASE_DIR / "front"
@@ -21,72 +20,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=FRONT_DIR), name="static")
+app.include_router(movies_router)
 
 
+
+# подключение к frontend
 @app.get("/")
 async def frontend():
     return FileResponse(FRONT_DIR / "index.html")
-
-
-# endpoints
-# список всех фильмов
-@app.get("/movies")
-async def get_movies():
-    async with SessionLocal() as session:
-        result = await session.execute(select(Movie))
-        movies = result.scalars().all()
-        return {"movies": movies}
-
-
-# фильм по индексу, по типу: movies/1 = "Spongebob Squarepants"
-@app.get("/movies/{movie_id}")
-async def get_movie_id(movie_id: int):
-    async with SessionLocal() as session:
-        selected_movie = await session.execute(select(Movie).where(Movie.id == movie_id))
-        movie = selected_movie.scalars().one_or_none()
-        if movie is None:
-            return {"message": "Movie not found!"}
-        return {"movie": movie}
-
-# добавить фильм в список
-@app.post("/movies/{movie_id}")
-async def add_movie(item: MovieCreate):
-    async with SessionLocal() as session:
-        new_movie = Movie(title=item.title, year=item.year)
-
-        session.add(new_movie)
-        await session.commit()
-
-        return {"message": "Movie added!"}
-
-# удалить фильм по индексу
-@app.delete("/movies/{movie_id}")
-async def delete_movie(movie_id: int):
-    async with SessionLocal() as session:
-        result = await session.execute(
-            select(Movie).where(Movie.id == movie_id)
-        )
-        movie = result.scalars().one_or_none()
-        if movie is None:
-            return {"message": "Movie not found!"}
-        await session.delete(movie)
-        await session.commit()
-        return {"message": "Movie deleted!"}
-
-# обновить данные фильма
-
-@app.patch("/movies/{movie_id}")
-async def update_movie(movie_id: int, item: MovieUpdate):
-    async with SessionLocal() as session:
-        result = await session.execute(
-            select(Movie).where(Movie.id == movie_id)
-        )
-        movie = result.scalars().one_or_none()
-        if movie is None:
-            return {"message": "Movie not found!"}
-        if item.title is not None:
-            movie.title = item.title
-        if item.year is not None:
-            movie.year = item.year
-        await session.commit()
-        return {"message": "Movie updated!", "movie": movie}
