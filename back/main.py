@@ -1,11 +1,12 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 
-from db import create_db
+from db import create_db, SessionLocal
 
 from router import router as movies_router
 
@@ -28,3 +29,13 @@ app.include_router(movies_router)
 @app.get("/")
 async def frontend():
     return FileResponse(FRONT_DIR / "index.html")
+
+# проверка на живность
+@app.get("/health")
+async def health():
+    try:
+        async with SessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "ok", "db": "ok"}
+    except Exception:
+        raise HTTPException(status_code=503, detail="db unavailable")
