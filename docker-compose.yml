@@ -31,6 +31,12 @@ services:
     volumes:
       - ./back/:/app/back
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status=200 else 1\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     depends_on:
       db:
         # Приложение запустится только после того, как БД пройдёт healthcheck выше
