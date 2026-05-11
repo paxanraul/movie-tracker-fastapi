@@ -13,6 +13,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY back ./back
 COPY front ./front
 
+# Создаём группу и пользователя без пароля и без домашней папки
+RUN groupadd --system app && useradd --system --gid app appuser
+
+# Передаём владение рабочей папкой новому юзеру
+# (нужно, потому что файлы скопированы под root и appuser не может их читать/писать)
+RUN chown -R appuser:app /app
+
+# Все следующие команды (включая CMD) выполнятся от имени appuser
+USER appuser
+
 # Переходим в папку бэкенда — отсюда будет запускаться uvicorn
 WORKDIR /app/back
 
