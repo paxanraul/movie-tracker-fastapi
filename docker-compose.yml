@@ -1,27 +1,39 @@
 services:
+
+  # Сервис базы данных — PostgreSQL 16 на основе alpine (лёгкий образ)
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: movie_db
-      POSTGRES_USER: movie_user
-      POSTGRES_PASSWORD: movie_password
+      POSTGRES_DB: movie_db           # название базы данных
+      POSTGRES_USER: movie_user       # пользователь БД
+      POSTGRES_PASSWORD: movie_password  # пароль пользователя
     volumes:
+      # Данные БД хранятся в именованном volume, а не внутри контейнера.
+      # Это значит данные сохранятся даже после docker compose down
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
+      # Проверяем готовность БД принимать подключения перед запуском приложения
       test: ["CMD-SHELL", "pg_isready -U movie_user -d movie_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      interval: 5s   # проверять каждые 5 секунд
+      timeout: 5s    # считать неудачей если нет ответа за 5 секунд
+      retries: 5     # после 5 неудач — считать сервис нерабочим
 
+  # Сервис приложения — собирается из Dockerfile в текущей папке
   app:
     build: .
     environment:
+      # URL подключения к БД. "db" — это имя сервиса выше, Docker сам резолвит его в IP
       DATABASE_URL: postgresql+asyncpg://movie_user:movie_password@db:5432/movie_db
     ports:
+      # Пробрасываем порт: 8000 на Mac → 8000 внутри контейнера
+      # После запуска приложение доступно на http://localhost:8000
       - "8000:8000"
     depends_on:
       db:
+        # Приложение запустится только после того, как БД пройдёт healthcheck выше
         condition: service_healthy
 
+# Именованные volumes — Docker хранит их на диске независимо от контейнеров.
+# Удалить вместе с данными можно командой: docker compose down -v
 volumes:
   postgres_data:
