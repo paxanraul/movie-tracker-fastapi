@@ -13,7 +13,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       # Проверяем готовность БД принимать подключения перед запуском приложения
-      test: ["CMD-SHELL", "pg_isready -U movie_user -d movie_db"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s   # проверять каждые 5 секунд
       timeout: 5s    # считать неудачей если нет ответа за 5 секунд
       retries: 5     # после 5 неудач — считать сервис нерабочим
