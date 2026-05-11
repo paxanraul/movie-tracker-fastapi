@@ -4,9 +4,9 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: movie_db           # название базы данных
-      POSTGRES_USER: movie_user       # пользователь БД
-      POSTGRES_PASSWORD: movie_password  # пароль пользователя
+      POSTGRES_DB: ${POSTGRES_DB}           # название базы данных
+      POSTGRES_USER: ${POSTGRES_USER}       # пользователь БД
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # пароль пользователя
     volumes:
       # Данные БД хранятся в именованном volume, а не внутри контейнера.
       # Это значит данные сохранятся даже после docker compose down
@@ -23,7 +23,7 @@ services:
     build: .
     environment:
       # URL подключения к БД. "db" — это имя сервиса выше, Docker сам резолвит его в IP
-      DATABASE_URL: postgresql+asyncpg://movie_user:movie_password@db:5432/movie_db
+      DATABASE_URL: ${DATABASE_URL}
     ports:
       # Пробрасываем порт: 8000 на Mac → 8000 внутри контейнера
       # После запуска приложение доступно на http://localhost:8000
