@@ -1,3 +1,12 @@
+# Stage 1
+FROM python:3.12-slim AS builder
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# Stage 2 | finally stage
 # Базовый образ — Python 3.12 в облегчённой версии (slim = меньше размер, только необходимое)
 FROM python:3.12-slim
 
@@ -6,8 +15,7 @@ WORKDIR /app
 
 # Копируем только файл зависимостей — чтобы Docker кэшировал этот слой отдельно.
 # Если код изменился, но requirements.txt — нет, pip install заново не запустится
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --from=builder /install /usr/local
 
 # Копируем исходный код бэкенда и фронтенда в контейнер
 COPY back ./back
