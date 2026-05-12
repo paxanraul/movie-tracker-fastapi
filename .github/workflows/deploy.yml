@@ -1,0 +1,30 @@
+# Имя workflow — отображается на вкладке Actions в GitHub
+name: Deploy to production
+
+# Когда запускать
+on:
+  push:
+    branches:
+      - main   # только при push в main, не при push в другие ветки
+  workflow_dispatch:   # позволяет запускать вручную из UI GitHub
+
+jobs:
+  deploy:
+    # На какой виртуалке выполняется (бесплатные ubuntu-runners от GitHub)
+    runs-on: ubuntu-latest
+
+    steps:
+      # Шаг 1. Подключиться по SSH к серверу и выполнить команды деплоя.
+      # appleboy/ssh-action — популярная готовая action из маркетплейса
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /root/movie-tracker-fastapi
+            git pull origin main
+            docker compose up -d --build
+            docker image prune -f
