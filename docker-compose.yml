@@ -32,7 +32,7 @@ services:
       - ./back/:/app/back
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status=200 else 1\""]
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -41,6 +41,24 @@ services:
       db:
         # Приложение запустится только после того, как БД пройдёт healthcheck выше
         condition: service_healthy
+
+  # Reverse proxy — принимает HTTP/HTTPS трафик снаружи и пересылает в app.
+  # Без nginx сайт был бы доступен только на :8000, и не было бы HTTPS
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"     # http
+      - "443:443"   # https (понадобится после получения сертификата)
+    volumes:
+      # Конфиг nginx подключаем как read-only — правки делаются на хосте
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # Папки для Let's Encrypt: сертификаты и временные файлы для проверки домена.
+      # Создадим их на сервере при настройке HTTPS
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - app
+    restart: unless-stopped
 
 # Именованные volumes — Docker хранит их на диске независимо от контейнеров.
 # Удалить вместе с данными можно командой: docker compose down -v
