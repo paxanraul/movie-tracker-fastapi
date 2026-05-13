@@ -4,3 +4,4 @@ fastapi
 asyncpg
 greenlet
 pydantic
+pytest
