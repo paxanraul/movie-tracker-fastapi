@@ -24,6 +24,7 @@ services:
     environment:
       # URL подключения к БД. "db" — это имя сервиса выше, Docker сам резолвит его в IP
       DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       # Пробрасываем порт: 8000 на Mac → 8000 внутри контейнера
       # После запуска приложение доступно на http://localhost:8000
