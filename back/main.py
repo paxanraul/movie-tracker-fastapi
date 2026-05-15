@@ -9,6 +9,7 @@ from sqlalchemy import text
 from db import create_db, SessionLocal
 
 from router import router as movies_router
+from auth_router import router as auth_router
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONT_DIR = BASE_DIR / "front"
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=FRONT_DIR), name="static")
 app.include_router(movies_router)
+app.include_router(auth_router)
 
 
 
