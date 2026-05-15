@@ -5,3 +5,4 @@ test.py
 .env
 certbot
 .pytest_cache/
+.git
