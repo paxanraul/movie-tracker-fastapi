@@ -4,7 +4,8 @@ i think, you got me.
 
 ## Ссылка на сайт
 
-personal-movietracker.ru
+[Перейти на сайт](https://personal-movietracker.ru/)
+
 
 ## Docker
 
